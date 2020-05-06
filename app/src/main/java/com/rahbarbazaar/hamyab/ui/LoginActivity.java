@@ -19,8 +19,10 @@ import com.rahbarbazaar.hamyab.R;
 import com.rahbarbazaar.hamyab.api_error.ErrorUtils;
 import com.rahbarbazaar.hamyab.api_error.ErrorsMessage422;
 import com.rahbarbazaar.hamyab.models.LoginModel;
+import com.rahbarbazaar.hamyab.models.dashboard.ProjectList;
 import com.rahbarbazaar.hamyab.network.Service;
 import com.rahbarbazaar.hamyab.network.ServiceProvider;
+import com.rahbarbazaar.hamyab.service.GpsService;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity;
 import com.rahbarbazaar.hamyab.utilities.GeneralTools;
@@ -93,6 +95,7 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
     }
 
+
     private void submitLoginRequest() {
 
         avi.setVisibility(View.VISIBLE);
@@ -109,17 +112,15 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
                 .subscribeWith(new DisposableSingleObserver<LoginModel>() {
 
                     @Override
-                    public void onSuccess(LoginModel loginModel) {
+                    public void onSuccess(LoginModel result) {
 
                         avi.setVisibility(View.GONE);
                         btn_login.setVisibility(View.VISIBLE);
 
-                        LoginModel loginModel1 = new LoginModel();
-                        loginModel1 = loginModel;
-                        Cache.setString(LoginActivity.this, "access_token", Objects.requireNonNull(loginModel).apiToken.toString());
-                        startActivity(new Intent(LoginActivity.this, MainActivity.class));
-                        finish();
-
+                        LoginModel loginModel = new LoginModel();
+                        loginModel = result;
+                        Cache.setString(LoginActivity.this, "access_token", String.valueOf(loginModel.apiToken));
+                        getProjectList();
                     }
 
                     @Override
@@ -162,7 +163,7 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
 
 //                        } else if(e instanceof IOException) {
-                        } else{
+                        } else {
                             Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
                         }
 
@@ -170,63 +171,33 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
                     }
                 }));
 
+    }
 
-//        Service service = new ServiceProvider(this).getmService();
-//        Call<LoginModel> call = service.login(name,hashed_password);
-//        call.enqueue(new Callback<LoginModel>() {
-//            @Override
-//            public void onResponse(Call<LoginModel> call, Response<LoginModel> response) {
-//                avi.setVisibility(View.GONE);
-//                btn_login.setVisibility(View.VISIBLE);
-//
-//                if (response.code() == 200) {
-//
-//                    LoginModel loginModel = new LoginModel();
-//                    loginModel = response.body();
-//                    Cache.setString(LoginActivity.this,"access_token", Objects.requireNonNull(loginModel).apiToken.toString());
-//                    startActivity(new Intent(LoginActivity.this,MainActivity.class));
-//                    finish();
-//
-//                } else if (response.code() == 422) {
-//
-//                    builderName = null;
-//                    builderPassword = null;
-//                    ErrorsMessage422 apiError = ErrorUtils.parseError422(response);
-//
-//                    if (apiError.name != null) {
-//                        builderName = new StringBuilder();
-//                        for (String a : apiError.name) {
-//                            builderName.append("").append(a).append(" ");
-//                        }
-//                    }
-//
-//                    if (apiError.password!= null) {
-//                        builderPassword = new StringBuilder();
-//                        for (String b : apiError.password) {
-//                            builderPassword.append("").append(b).append(" ");
-//                        }
-//                    }
-//
-//                    if (builderName != null) {
-//                        Toast.makeText(LoginActivity.this, "" + builderName, Toast.LENGTH_SHORT).show();
-//                    }
-//                    if (builderPassword != null) {
-//                        Toast.makeText(LoginActivity.this, "" + builderPassword, Toast.LENGTH_SHORT).show();
-//                    }
-//
-//                } else {
-//                    Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
-//                }
-//
-//            }
-//
-//            @Override
-//            public void onFailure(Call<LoginModel> call, Throwable t) {
-//                avi.setVisibility(View.GONE);
-//                btn_login.setVisibility(View.VISIBLE);
-//                Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
-//            }
-//        });
+    private void getProjectList() {
+
+        String api_token = Cache.getString(LoginActivity.this, "access_token");
+        Service service = new ServiceProvider(this).getmService();
+        disposable.add(service.getProjectList(api_token)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeWith(new DisposableSingleObserver<ProjectList>() {
+                    @Override
+                    public void onSuccess(ProjectList result) {
+
+                        ProjectList projectList = new ProjectList();
+                        projectList = result;
+                        Intent intent = new Intent(LoginActivity.this,MainActivity.class);
+                        intent.putExtra("projectList",projectList);
+                        startActivity(intent);
+                        finish();
+
+                    }
+
+                    @Override
+                    public void onError(Throwable e) {
+                        int d = 5;
+                    }
+                }));
     }
 
 

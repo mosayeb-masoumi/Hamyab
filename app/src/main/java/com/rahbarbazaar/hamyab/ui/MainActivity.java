@@ -1,7 +1,6 @@
 package com.rahbarbazaar.hamyab.ui;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -22,12 +21,9 @@ import android.support.v4.widget.DrawerLayout;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.Switch;
 import android.widget.Toast;
-
 import com.google.android.gms.common.api.ResolvableApiException;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
@@ -35,25 +31,14 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.SettingsClient;
 import com.google.android.gms.tasks.Task;
-import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
 import com.rahbarbazaar.hamyab.R;
-import com.rahbarbazaar.hamyab.models.LoginModel;
-import com.rahbarbazaar.hamyab.network.Service;
-import com.rahbarbazaar.hamyab.network.ServiceProvider;
+import com.rahbarbazaar.hamyab.models.dashboard.ProjectList;
 import com.rahbarbazaar.hamyab.service.GpsService;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity;
 import com.rahbarbazaar.hamyab.utilities.GeneralTools;
 
-import java.util.Objects;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.observers.DisposableSingleObserver;
-import io.reactivex.schedulers.Schedulers;
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 public class MainActivity extends CustomBaseActivity implements View.OnClickListener {
 
@@ -63,13 +48,7 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     DrawerLayout drawer_layout_home;
     ImageView image_drawer;
     LinearLayout linear_drawer_about, linear_drawer_invite_friend;
-//    Switch btn_switch;
-
     Button btn_start_service, btn_stop_service;
-
-
-
-//    String switch_check;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,10 +65,13 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
             }
         };
 
-
-//        stopService(new Intent(this,GpsService.class));
-
         initView();
+
+
+        Intent intent = getIntent();
+        ProjectList projectList = new ProjectList();
+        projectList = intent.getParcelableExtra("projectList");
+
 
 
 

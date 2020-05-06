@@ -42,7 +42,7 @@ public class ServiceProvider {
 
 
                 Request request = chain.request().newBuilder()
-                        .addHeader("Authorization", "Bearer " + Cache.getString(context,"access_token"))
+//                        .addHeader("Authorization", "Bearer " + Cache.getString(context,"access_token"))
                         .addHeader("Accept", "application/json")
                         .build();
                 return chain.proceed(request);

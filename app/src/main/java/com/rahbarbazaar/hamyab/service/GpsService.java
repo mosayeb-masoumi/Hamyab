@@ -67,7 +67,7 @@ public class GpsService extends Service {
         }
 
         NotificationCompat.Builder sNotifBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_info)
+                .setSmallIcon(R.mipmap.app_icon)
                 .setContentTitle("همادیت")
                 .setContentText("سرویس ارسال لوکیشن فعال است");
 
@@ -117,10 +117,11 @@ public class GpsService extends Service {
     private void sendLatng() {
         getLocation();
 
-        Toast.makeText(GpsService.this, ""+strLat+"  "+strLng, Toast.LENGTH_SHORT).show();
+
         String api_token = Cache.getString(GpsService.this,"access_token");
 
         com.rahbarbazaar.hamyab.network.Service service = new ServiceProvider(GpsService.this).getmService();
+//        Call<Boolean> call = service.sendGPS(api_token,strLat,strLng,"1");
         Call<Boolean> call = service.sendGPS(api_token,strLat,strLng,"1");
         call.enqueue(new Callback<Boolean>() {
             @Override
@@ -129,7 +130,7 @@ public class GpsService extends Service {
                     Toast.makeText(GpsService.this, ""+strLat+"  "+strLng, Toast.LENGTH_SHORT).show();
 
                 }else{
-//                    Toast.makeText(GpsService.this, ""+getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(GpsService.this, ""+getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
                 }
             }
 

@@ -1,6 +1,7 @@
 package com.rahbarbazaar.hamyab.network;
 
 import com.rahbarbazaar.hamyab.models.LoginModel;
+import com.rahbarbazaar.hamyab.models.dashboard.ProjectList;
 
 import io.reactivex.Single;
 import retrofit2.Call;
@@ -14,11 +15,15 @@ public interface Service {
     Single<LoginModel> login(@Query("name") String name,
                              @Query("password") String password);
 
-    @POST("GetData/getGPS")
+    @POST("GetData/GetGPS")
     Call<Boolean> sendGPS(@Query("api_token") String api_token,
                           @Query("lat") String lat,
                           @Query("lng") String lng,
                           @Query("project_id") String project_id);
+
+
+    @POST("Dashboard")
+    Single<ProjectList> getProjectList(@Query("api_token") String api_token);
 
 
 }
