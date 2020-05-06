@@ -1,10 +1,15 @@
 package com.rahbarbazaar.hamyab.service;
 
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
 
 import com.rahbarbazaar.hamyab.R;
@@ -19,13 +24,17 @@ import retrofit2.Response;
 
 public class GpsService extends Service {
 
-    public static final long NOTIFY_INTERVAL = 15 * 1000; // 15 seconds
+    public static final long NOTIFY_INTERVAL = 7 * 1000; // 7 seconds
     // run on another Thread to avoid crash
     private Handler mHandler = new Handler();
     private Timer mTimer = null;
 
     private GpsTracker gpsTracker;
     String strLat, strLng;
+
+
+    private String CHANNEL_ID = "channelId";
+    private NotificationManager notifManager;
 
 
     @Nullable
@@ -43,6 +52,32 @@ public class GpsService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
+           // to run service in foreground
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+
+            String offerChannelName = "Service Channel";
+            String offerChannelDescription= "Location Channel";
+            int offerChannelImportance = NotificationManager.IMPORTANCE_DEFAULT;
+
+            NotificationChannel notifChannel = new NotificationChannel(CHANNEL_ID, offerChannelName, offerChannelImportance);
+            notifChannel.setDescription(offerChannelDescription);
+            notifManager = getSystemService(NotificationManager.class);
+            notifManager.createNotificationChannel(notifChannel);
+
+        }
+
+        NotificationCompat.Builder sNotifBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_info)
+                .setContentTitle("همادیت")
+                .setContentText("سرویس ارسال لوکیشن فعال است");
+
+        Notification servNotification = sNotifBuilder.build();
+
+        startForeground(1, servNotification);
+
+        ////////////////////////////////////////////////////////////////////////
+
+
         // cancel if already existed
         if(mTimer != null) {
             mTimer.cancel();
@@ -53,9 +88,9 @@ public class GpsService extends Service {
 
         // schedule task
             mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, NOTIFY_INTERVAL);
-        return super.onStartCommand(intent, flags, startId);
-//        return START_STICKY;
-//        return START_NOT_STICKY;
+//        return super.onStartCommand(intent, flags, startId);
+        return START_STICKY;
+
     }
 
     @Override
@@ -94,7 +129,7 @@ public class GpsService extends Service {
                     Toast.makeText(GpsService.this, ""+strLat+"  "+strLng, Toast.LENGTH_SHORT).show();
 
                 }else{
-                    Toast.makeText(GpsService.this, ""+getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(GpsService.this, ""+getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
                 }
             }
 

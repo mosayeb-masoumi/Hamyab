@@ -164,7 +164,9 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
 
         if (hasLocationPermission()) {
             if (checkGpsON()) {
-                startService(new Intent(MainActivity.this, GpsService.class));
+//                startService(new Intent(MainActivity.this, GpsService.class));
+                // ContextCompat choose the best method depend of different ApiAndroid
+                ContextCompat.startForegroundService(MainActivity.this,new Intent(this, GpsService.class));
                 Cache.setString(MainActivity.this, "service_state", "enable");
                 btn_start_service.setVisibility(View.GONE);
                 btn_stop_service.setVisibility(View.VISIBLE);
