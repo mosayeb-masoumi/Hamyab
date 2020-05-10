@@ -10,6 +10,8 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+
+
     <application
         android:name=".utilities.App"
         android:allowBackup="true"

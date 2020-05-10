@@ -1,14 +1,21 @@
 package com.rahbarbazaar.hamyab.ui;
 
+import android.Manifest;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -75,24 +82,17 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
             }
         };
 
-
         initView();
 
-
         // event on done keyboard
-        edt_name.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-                if (actionId == EditorInfo.IME_ACTION_DONE) {
-                    submitLoginRequest();
-                    closeKeyboard();
-                    return true;
-                }
-                return false;
+        edt_password.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if (actionId == EditorInfo.IME_ACTION_DONE) {
+                closeKeyboard();
+                checkLocationPermission();
+                return true;
             }
+            return false;
         });
-
-
     }
 
 
@@ -104,7 +104,6 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
         String password = edt_password.getText().toString();
         String hashed_password = sha1Hash(password);
 
-
         Service service = new ServiceProvider(this).getmService();
         disposable.add(service.login(name, hashed_password)
                 .subscribeOn(Schedulers.io())
@@ -114,8 +113,6 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
                     @Override
                     public void onSuccess(LoginModel result) {
 
-                        avi.setVisibility(View.GONE);
-                        btn_login.setVisibility(View.VISIBLE);
 
                         LoginModel loginModel = new LoginModel();
                         loginModel = result;
@@ -184,6 +181,9 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
                     @Override
                     public void onSuccess(ProjectList result) {
 
+                        avi.setVisibility(View.GONE);
+                        btn_login.setVisibility(View.VISIBLE);
+
                         ProjectList projectList = new ProjectList();
                         projectList = result;
                         Intent intent = new Intent(LoginActivity.this,MainActivity.class);
@@ -195,14 +195,32 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
                     @Override
                     public void onError(Throwable e) {
-                        int d = 5;
+                        avi.setVisibility(View.GONE);
+                        btn_login.setVisibility(View.VISIBLE);
+                        if (e instanceof HttpException) {
+                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+
+                        }else {
+                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+                        }
+
                     }
                 }));
     }
 
 
     private void closeKeyboard() {
+
+        InputMethodManager imm = (InputMethodManager) this.getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = this.getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(this);
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
     }
+
 
     private void initView() {
         edt_name = findViewById(R.id.edt_name);
@@ -219,9 +237,43 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
         switch (view.getId()) {
             case R.id.btn_login:
-                submitLoginRequest();
+                checkLocationPermission();
                 break;
         }
+    }
+
+    private void checkLocationPermission() {
+        if (hasLocationPermission()) {
+            submitLoginRequest();
+        }else{
+            askLocationPermission();
+        }
+
+    }
+
+
+
+    private boolean hasLocationPermission() {
+        return ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
+                ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+    private void askLocationPermission() {
+        ActivityCompat.requestPermissions((LoginActivity.this)
+                , new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 3);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        if (requestCode == 3) {
+            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                submitLoginRequest();
+            } else {
+                Toast.makeText(this, "نیاز به اجازه ی دسترسی لوکیشن", Toast.LENGTH_SHORT).show();
+            }
+        }
+
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
 

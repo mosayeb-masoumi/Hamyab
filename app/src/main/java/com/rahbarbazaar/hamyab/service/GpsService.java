@@ -1,40 +1,50 @@
 package com.rahbarbazaar.hamyab.service;
 
+import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
 
+import com.google.android.gms.location.LocationListener;
 import com.rahbarbazaar.hamyab.R;
 import com.rahbarbazaar.hamyab.network.ServiceProvider;
+import com.rahbarbazaar.hamyab.ui.MainActivity;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.GpsTracker;
+
 import java.util.Timer;
 import java.util.TimerTask;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
 public class GpsService extends Service {
 
-    public static final long NOTIFY_INTERVAL = 7 * 1000; // 7 seconds
+//    public static final long NOTIFY_INTERVAL = 7 * 1000; // 7 seconds
+
     // run on another Thread to avoid crash
     private Handler mHandler = new Handler();
     private Timer mTimer = null;
-
     private GpsTracker gpsTracker;
-    String strLat, strLng;
-
+    String strLat = "", strLng = "";
 
     private String CHANNEL_ID = "channelId";
     private NotificationManager notifManager;
+
 
 
     @Nullable
@@ -46,17 +56,19 @@ public class GpsService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Toast.makeText(this, "service is created", Toast.LENGTH_SHORT).show();
+
+//        Toast.makeText(this, "service is created", Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
 
-           // to run service in foreground
+
+        // to run service in foreground
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
 
             String offerChannelName = "Service Channel";
-            String offerChannelDescription= "Location Channel";
+            String offerChannelDescription = "Location Channel";
             int offerChannelImportance = NotificationManager.IMPORTANCE_DEFAULT;
 
             NotificationChannel notifChannel = new NotificationChannel(CHANNEL_ID, offerChannelName, offerChannelImportance);
@@ -68,26 +80,27 @@ public class GpsService extends Service {
 
         NotificationCompat.Builder sNotifBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setSmallIcon(R.mipmap.app_icon)
-                .setContentTitle("همادیت")
+                .setContentTitle("همیاب")
                 .setContentText("سرویس ارسال لوکیشن فعال است");
 
         Notification servNotification = sNotifBuilder.build();
-
         startForeground(1, servNotification);
 
         ////////////////////////////////////////////////////////////////////////
 
-
         // cancel if already existed
-        if(mTimer != null) {
+        if (mTimer != null) {
             mTimer.cancel();
-        }else{
+        } else {
             // recreate new
             mTimer = new Timer();
         }
 
+        long time = Cache.getInt(GpsService.this, "time");
+        final long NOTIFY_INTERVAL = time * 1000;
+
         // schedule task
-            mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, NOTIFY_INTERVAL);
+        mTimer.scheduleAtFixedRate(new TimeDisplayTimerTask(), 0, NOTIFY_INTERVAL);
 //        return super.onStartCommand(intent, flags, startId);
         return START_STICKY;
 
@@ -106,45 +119,61 @@ public class GpsService extends Service {
             // run on another thread
             mHandler.post(() -> {
                 // display toast
-                Toast.makeText(getApplicationContext(), "service start",
-                        Toast.LENGTH_SHORT).show();
+//                Toast.makeText(getApplicationContext(), "service start", Toast.LENGTH_SHORT).show();
 
-                sendLatng();
+//
+
+                if (checkGpsON()) {
+//                    sendLatng();
+                    getLocation();
+                } else {
+                    Toast.makeText(getApplicationContext(), "لطفا GPS دستگاه خود را روشن نمایید", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
             });
         }
     }
 
     private void sendLatng() {
-        getLocation();
+
+//        getLocation();
 
 
-        String api_token = Cache.getString(GpsService.this,"access_token");
+        String running_project = Cache.getString(this, "running_project");
+        String api_token = Cache.getString(GpsService.this, "access_token");
+        String project_id = Cache.getString(GpsService.this, "project_id");
 
         com.rahbarbazaar.hamyab.network.Service service = new ServiceProvider(GpsService.this).getmService();
-//        Call<Boolean> call = service.sendGPS(api_token,strLat,strLng,"1");
-        Call<Boolean> call = service.sendGPS(api_token,strLat,strLng,"1");
+        Call<Boolean> call = service.sendGPS(api_token, strLat, strLng, project_id);
         call.enqueue(new Callback<Boolean>() {
             @Override
             public void onResponse(Call<Boolean> call, Response<Boolean> response) {
-                if(response.code()==200){
-                    Toast.makeText(GpsService.this, ""+strLat+"  "+strLng, Toast.LENGTH_SHORT).show();
+                if (response.code() == 200) {
+                    Toast.makeText(GpsService.this, "پروژه " + running_project +"  "+"ID=" +project_id+ " " +
+                            strLat + "  " + strLng, Toast.LENGTH_SHORT).show();
 
-                }else{
-                    Toast.makeText(GpsService.this, ""+getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(GpsService.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
             public void onFailure(Call<Boolean> call, Throwable t) {
-                Toast.makeText(GpsService.this, ""+getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+                Toast.makeText(GpsService.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
             }
         });
     }
 
+    private boolean checkGpsON() {
+        final LocationManager manager = (LocationManager) (GpsService.this).getSystemService(Context.LOCATION_SERVICE);
+        return manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
 
 
     int a = 0;
-        public void getLocation() {
+
+    public void getLocation() {
             gpsTracker = new GpsTracker(this);
             if (gpsTracker.canGetLocation()) {
                 double latitude = gpsTracker.getLatitude();
@@ -152,16 +181,15 @@ public class GpsService extends Service {
                 strLat = (String.valueOf(latitude));
                 strLng = (String.valueOf(longitude));
                 // to handle getting gps in first calculate after turning on gps
-                if(a < 2){
+                if(a <2 ){
                     a ++;
                     getLocation();
                 }
+
+                sendLatng();
+
             } else {
                 gpsTracker.showSettingsAlert();
             }
         }
-
-
-
-
 }

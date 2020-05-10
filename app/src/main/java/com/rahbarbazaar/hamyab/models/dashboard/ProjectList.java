@@ -16,8 +16,7 @@ public class ProjectList implements Parcelable {
     public Integer time;
     @SerializedName("project")
     @Expose
-    public ArrayList project = null;
-//    public List<Project> project = null;  or this code line is OK  instead of upper line
+    public List<Project> project = null;  //or this code line is OK  instead of upper line
 
     public ProjectList() {
 
