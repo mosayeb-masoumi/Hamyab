@@ -5,14 +5,18 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
+import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
+import com.rahbarbazaar.hamyab.BuildConfig
 import com.rahbarbazaar.hamyab.R
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity
 import com.rahbarbazaar.hamyab.utilities.GeneralTools
 import kotlinx.android.synthetic.main.activity_splash.*
 import java.util.*
+
+
 
 class SplashActivity : CustomBaseActivity() {
 
@@ -40,6 +44,9 @@ class SplashActivity : CustomBaseActivity() {
 
             }
         }, 2700)
+
+//        txtVersion.setText(BuildConfig.VERSION_NAME)
+        txtVersion.setText(BuildConfig.VERSION_NAME)
 
     }
 

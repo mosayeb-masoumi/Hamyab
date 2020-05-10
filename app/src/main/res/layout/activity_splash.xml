@@ -3,17 +3,117 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
     android:id="@+id/rl_root"
+    android:layout_height="match_parent"
     tools:context=".ui.SplashActivity">
 
-    <com.wang.avi.AVLoadingIndicatorView
-        android:layout_width="wrap_content"
+
+
+    <ImageView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="fitXY"
+        android:layout_alignParentStart="true"
+        android:src="@drawable/bg_simple" />
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:id="@+id/rl10"
+        android:layout_height="250dp">
+
+        <ImageView
+            android:id="@+id/logo"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginTop="20dp"
+            android:layout_marginBottom="70dp"
+            android:layout_marginStart="70dp"
+            android:layout_marginEnd="70dp"
+            android:src="@drawable/logo_spalsh" />
+
+    </RelativeLayout>
+
+
+
+    <RelativeLayout
+        android:id="@+id/txtPoweredBy"
+        android:layout_width="90dp"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:id="@+id/avi_splash"
-        android:visibility="visible"
-        app:indicatorColor="@color/blue_dark"
-        app:indicatorName="BallPulseIndicator" />
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="75dp">
+
+        <TextView
+            android:id="@+id/txt"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal"
+            android:text="powered_by"
+            android:textColor="@color/white_gray" />
+
+        <ImageView
+            android:id="@+id/rahbartxt"
+            android:layout_width="100dp"
+            android:layout_height="15dp"
+            android:layout_below="@+id/txt"
+            android:src="@drawable/rahbartxt" />
+
+        <TextView
+            android:id="@+id/vesion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/rahbartxt"
+            android:text="version "
+            android:textColor="@color/white_gray" />
+
+        <TextView
+            android:id="@+id/txtVersion"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/rahbartxt"
+            android:layout_toEndOf="@+id/vesion"
+            android:textColor="@color/white_gray" />
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="70dp"
+        android:layout_below="@+id/rl10">
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true"
+            android:layout_marginStart="50dp"
+            android:layout_marginEnd="50dp"
+            android:src="@drawable/logo_text">
+
+        </ImageView>
+
+    </RelativeLayout>
+
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_above="@+id/txtPoweredBy"
+        android:layout_height="wrap_content">
+
+        <com.wang.avi.AVLoadingIndicatorView
+            android:id="@+id/avi_splash"
+            android:layout_width="40dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_centerHorizontal="true"
+            android:layout_marginBottom="0dp"
+            android:visibility="visible"
+            app:indicatorColor="@color/white_gray" />
+
+
+    </RelativeLayout>
+
+
+
 
 </RelativeLayout>

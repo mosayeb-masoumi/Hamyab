@@ -12,6 +12,8 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.text.Editable;
+import android.text.Selection;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -83,6 +85,21 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
         };
 
         initView();
+
+
+        edt_name.setOnKeyListener((View.OnKeyListener) (v, keyCode, event) -> {
+
+            if (keyCode == EditorInfo.IME_FLAG_NO_ENTER_ACTION) {
+
+                Selection.setSelection((Editable) edt_password.getText(),edt_name.getSelectionStart());
+                edt_password.requestFocus();
+            }
+
+            return true;
+        });
+
+
+
 
         // event on done keyboard
         edt_password.setOnEditorActionListener((textView, actionId, keyEvent) -> {
@@ -190,6 +207,7 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
                         intent.putExtra("projectList",projectList);
                         startActivity(intent);
                         finish();
+                        overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
 
                     }
 

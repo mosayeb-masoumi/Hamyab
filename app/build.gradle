@@ -11,7 +11,7 @@ android {
         minSdkVersion 17
         targetSdkVersion 28
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
 
 //        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -21,6 +21,12 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            applicationVariants.all { variant ->
+                variant.outputs.all {
+                    outputFileName = "Hamyab V${defaultConfig.versionName}.apk"
+                }
+            }
+
         }
     }
     compileOptions {
