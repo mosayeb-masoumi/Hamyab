@@ -21,7 +21,6 @@ public interface Service {
                           @Query("lng") String lng,
                           @Query("project_id") String project_id);
 
-
     @POST("Dashboard")
     Call<ProjectList> getProjectList(@Query("api_token") String api_token);
 
