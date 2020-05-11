@@ -7,9 +7,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.text.Editable;
@@ -20,6 +23,7 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,7 +38,9 @@ import com.rahbarbazaar.hamyab.network.ServiceProvider;
 import com.rahbarbazaar.hamyab.service.GpsService;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity;
+import com.rahbarbazaar.hamyab.utilities.DialogFactory;
 import com.rahbarbazaar.hamyab.utilities.GeneralTools;
+import com.rahbarbazaar.hamyab.utilities.GpsTracker;
 import com.wang.avi.AVLoadingIndicatorView;
 
 import java.io.IOException;
@@ -59,6 +65,7 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
     EditText edt_name, edt_password;
     Button btn_login;
     AVLoadingIndicatorView avi;
+    RelativeLayout rl_root_login;
 
 
     // for handling422
@@ -66,6 +73,9 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
 
     CompositeDisposable disposable;
+
+    private GpsTracker gpsTracker;
+    String strLat = "", strLng = "";
 
 
     @Override
@@ -80,25 +90,26 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
             @Override
             public void onReceive(Context context, Intent intent) {
 
-//                tools.doCheckNetwork(LoginActivity.this, findViewById(R.id.drawer_layout_home));
+                tools.doCheckNetwork(LoginActivity.this, findViewById(R.id.rl_root_login));
             }
         };
 
         initView();
 
 
-        edt_name.setOnKeyListener((View.OnKeyListener) (v, keyCode, event) -> {
 
-            if (keyCode == EditorInfo.IME_FLAG_NO_ENTER_ACTION) {
+        edt_name.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
 
-                Selection.setSelection((Editable) edt_password.getText(),edt_name.getSelectionStart());
-                edt_password.requestFocus();
+                if(actionId == EditorInfo.IME_ACTION_NEXT){
+                    edt_password.requestFocus();
+                    return true;
+                }
+
+                return false;
             }
-
-            return true;
         });
-
-
 
 
         // event on done keyboard
@@ -115,115 +126,212 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
     private void submitLoginRequest() {
 
+//        getLocation();
+
+
         avi.setVisibility(View.VISIBLE);
         btn_login.setVisibility(View.GONE);
+
         String name = edt_name.getText().toString();
         String password = edt_password.getText().toString();
         String hashed_password = sha1Hash(password);
 
         Service service = new ServiceProvider(this).getmService();
-        disposable.add(service.login(name, hashed_password)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(new DisposableSingleObserver<LoginModel>() {
-
-                    @Override
-                    public void onSuccess(LoginModel result) {
+        Call<LoginModel> call = service.login(name, hashed_password);
+        call.enqueue(new Callback<LoginModel>() {
+            @Override
+            public void onResponse(Call<LoginModel> call, Response<LoginModel> response) {
 
 
-                        LoginModel loginModel = new LoginModel();
-                        loginModel = result;
-                        Cache.setString(LoginActivity.this, "access_token", String.valueOf(loginModel.apiToken));
-                        getProjectList();
-                    }
-
-                    @Override
-                    public void onError(Throwable e) {
-
-                        avi.setVisibility(View.GONE);
-                        btn_login.setVisibility(View.VISIBLE);
+                if (response.code() == 200) {
+                    LoginModel loginModel = new LoginModel();
+                    loginModel = response.body();
+                    Cache.setString(LoginActivity.this, "access_token", String.valueOf(loginModel.apiToken));
+                    getProjectList();
+                } else if (response.code() == 422) {
+                    avi.setVisibility(View.GONE);
+                    btn_login.setVisibility(View.VISIBLE);
 
 
-                        if (e instanceof HttpException) {
-                            int error = ((HttpException) e).code();
-                            if (error == 422) {
-                                builderName = null;
-                                builderPassword = null;
-                                ErrorsMessage422 apiError = ErrorUtils.parseError422(((HttpException) e).response());
+                    builderName = null;
+                    builderPassword = null;
+                    ErrorsMessage422 apiError = ErrorUtils.parseError422(response);
 
-                                if (apiError.name != null) {
-                                    builderName = new StringBuilder();
-                                    for (String a : apiError.name) {
-                                        builderName.append("").append(a).append(" ");
-                                    }
-                                }
-
-                                if (apiError.password != null) {
-                                    builderPassword = new StringBuilder();
-                                    for (String b : apiError.password) {
-                                        builderPassword.append("").append(b).append(" ");
-                                    }
-                                }
-
-                                if (builderName != null) {
-                                    Toast.makeText(LoginActivity.this, "" + builderName, Toast.LENGTH_SHORT).show();
-                                }
-                                if (builderPassword != null) {
-                                    Toast.makeText(LoginActivity.this, "" + builderPassword, Toast.LENGTH_SHORT).show();
-                                }
-                            } else {
-                                Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
-                            }
-
-
-//                        } else if(e instanceof IOException) {
-                        } else {
-                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+                    if (apiError.name != null) {
+                        builderName = new StringBuilder();
+                        for (String a : apiError.name) {
+                            builderName.append("").append(a).append(" ");
                         }
-
-
                     }
-                }));
+
+                    if (apiError.password != null) {
+                        builderPassword = new StringBuilder();
+                        for (String b : apiError.password) {
+                            builderPassword.append("").append(b).append(" ");
+                        }
+                    }
+
+                    if (builderName != null) {
+                        Toast.makeText(LoginActivity.this, "" + builderName, Toast.LENGTH_SHORT).show();
+                    }
+                    if (builderPassword != null) {
+                        Toast.makeText(LoginActivity.this, "" + builderPassword, Toast.LENGTH_SHORT).show();
+                    }
+
+
+                } else {
+                    avi.setVisibility(View.GONE);
+                    btn_login.setVisibility(View.VISIBLE);
+                    Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<LoginModel> call, Throwable t) {
+                avi.setVisibility(View.GONE);
+                btn_login.setVisibility(View.VISIBLE);
+                Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
+//        disposable.add(service.login(name, hashed_password)
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribeWith(new DisposableSingleObserver<LoginModel>() {
+//
+//                    @Override
+//                    public void onSuccess(LoginModel result) {
+//
+//
+//                        LoginModel loginModel = new LoginModel();
+//                        loginModel = result;
+//                        Cache.setString(LoginActivity.this, "access_token", String.valueOf(loginModel.apiToken));
+//                        getProjectList();
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//
+//                        avi.setVisibility(View.GONE);
+//                        btn_login.setVisibility(View.VISIBLE);
+//
+//
+//                        if (e instanceof HttpException) {
+//                            int error = ((HttpException) e).code();
+//                            if (error == 422) {
+//                                builderName = null;
+//                                builderPassword = null;
+//                                ErrorsMessage422 apiError = ErrorUtils.parseError422(((HttpException) e).response());
+//
+//                                if (apiError.name != null) {
+//                                    builderName = new StringBuilder();
+//                                    for (String a : apiError.name) {
+//                                        builderName.append("").append(a).append(" ");
+//                                    }
+//                                }
+//
+//                                if (apiError.password != null) {
+//                                    builderPassword = new StringBuilder();
+//                                    for (String b : apiError.password) {
+//                                        builderPassword.append("").append(b).append(" ");
+//                                    }
+//                                }
+//
+//                                if (builderName != null) {
+//                                    Toast.makeText(LoginActivity.this, "" + builderName, Toast.LENGTH_SHORT).show();
+//                                }
+//                                if (builderPassword != null) {
+//                                    Toast.makeText(LoginActivity.this, "" + builderPassword, Toast.LENGTH_SHORT).show();
+//                                }
+//                            } else {
+//                                Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+//                            }
+//
+//
+////                        } else if(e instanceof IOException) {
+//                        } else {
+//                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+//                        }
+//
+//
+//                    }
+//                }));
 
     }
 
     private void getProjectList() {
 
+//        getLocation();
+
         String api_token = Cache.getString(LoginActivity.this, "access_token");
         Service service = new ServiceProvider(this).getmService();
-        disposable.add(service.getProjectList(api_token)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribeWith(new DisposableSingleObserver<ProjectList>() {
-                    @Override
-                    public void onSuccess(ProjectList result) {
+        Call<ProjectList> call = service.getProjectList(api_token);
+        call.enqueue(new Callback<ProjectList>() {
+            @Override
+            public void onResponse(Call<ProjectList> call, Response<ProjectList> response) {
 
-                        avi.setVisibility(View.GONE);
-                        btn_login.setVisibility(View.VISIBLE);
+                avi.setVisibility(View.GONE);
+                btn_login.setVisibility(View.VISIBLE);
 
-                        ProjectList projectList = new ProjectList();
-                        projectList = result;
-                        Intent intent = new Intent(LoginActivity.this,MainActivity.class);
-                        intent.putExtra("projectList",projectList);
-                        startActivity(intent);
-                        finish();
-                        overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
+                if (response.code() == 200) {
 
-                    }
+                    ProjectList projectList = new ProjectList();
+                    projectList = response.body();
+                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                    intent.putExtra("projectList", projectList);
+                    startActivity(intent);
+                    getLocation();   // to be sure
+                    finish();
+                    overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
+                } else {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        avi.setVisibility(View.GONE);
-                        btn_login.setVisibility(View.VISIBLE);
-                        if (e instanceof HttpException) {
-                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+                }
+            }
 
-                        }else {
-                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
-                        }
+            @Override
+            public void onFailure(Call<ProjectList> call, Throwable t) {
+                avi.setVisibility(View.GONE);
+                btn_login.setVisibility(View.VISIBLE);
+                Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+            }
+        });
 
-                    }
-                }));
+//        disposable.add(service.getProjectList(api_token)
+//                .subscribeOn(Schedulers.io())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .subscribeWith(new DisposableSingleObserver<ProjectList>() {
+//                    @Override
+//                    public void onSuccess(ProjectList result) {
+//
+//                        avi.setVisibility(View.GONE);
+//                        btn_login.setVisibility(View.VISIBLE);
+//
+//                        ProjectList projectList = new ProjectList();
+//                        projectList = result;
+//                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+//                        intent.putExtra("projectList", projectList);
+//                        startActivity(intent);
+//                        getLocation();   // to be sure
+//                        finish();
+//                        overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
+//
+//                    }
+//
+//                    @Override
+//                    public void onError(Throwable e) {
+//                        avi.setVisibility(View.GONE);
+//                        btn_login.setVisibility(View.VISIBLE);
+//                        if (e instanceof HttpException) {
+//                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+//
+//                        } else {
+//                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+//                        }
+//
+//                    }
+//                }));
     }
 
 
@@ -262,19 +370,46 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
     private void checkLocationPermission() {
         if (hasLocationPermission()) {
-            submitLoginRequest();
-        }else{
+            if (checkGpsON()) {
+                submitLoginRequest();
+                getLocation();
+            } else {
+                gpsDialog2();
+            }
+
+        } else {
             askLocationPermission();
         }
 
     }
 
+    private void gpsDialog2() {
+        DialogFactory dialogFactory = new DialogFactory(this);
+        dialogFactory.createGpsDialog(new DialogFactory.DialogFactoryInteraction() {
+            @Override
+            public void onAcceptButtonClicked(String... strings) {
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                startActivityForResult(intent, 16);
+            }
+
+            @Override
+            public void onDeniedButtonClicked(boolean cancel_dialog) {
+
+            }
+        }, rl_root_login);
+    }
+
+    private boolean checkGpsON() {
+        final LocationManager manager = (LocationManager) (LoginActivity.this).getSystemService(Context.LOCATION_SERVICE);
+        return manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
+    }
 
 
     private boolean hasLocationPermission() {
         return ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
                 ContextCompat.checkSelfPermission(LoginActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
+
     private void askLocationPermission() {
         ActivityCompat.requestPermissions((LoginActivity.this)
                 , new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 3);
@@ -285,7 +420,7 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
 
         if (requestCode == 3) {
             if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                submitLoginRequest();
+                checkLocationPermission();
             } else {
                 Toast.makeText(this, "نیاز به اجازه ی دسترسی لوکیشن", Toast.LENGTH_SHORT).show();
             }
@@ -324,6 +459,37 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
             hexChars[j * 2 + 1] = hexArray[v & 0x0F];
         }
         return new String(hexChars);
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 16) {
+            checkLocationPermission();
+        }
+    }
+
+    int a = 0;
+
+    public void getLocation() {
+        gpsTracker = new GpsTracker(this);
+        if (gpsTracker.canGetLocation()) {
+            double latitude = gpsTracker.getLatitude();
+            double longitude = gpsTracker.getLongitude();
+            strLat = (String.valueOf(latitude));
+            strLng = (String.valueOf(longitude));
+            // to handle getting gps in first calculate after turning on gps
+            if (a < 2) {
+                a++;
+                getLocation();
+            }
+
+//            Toast.makeText(LoginActivity.this, "" + strLat + " " + strLng, Toast.LENGTH_SHORT).show();
+
+        } else {
+            gpsTracker.showSettingsAlert();
+        }
     }
 
 

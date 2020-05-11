@@ -12,4 +12,5 @@
 
     <string name="connectionFaield">خطا در برقراری ارتباط</string>
     <string name="serverFaield">خطا در اطلاعات دریافتی از سرور</string>
+    <string name="exit_user_account">خروج از حساب</string>
 </resources>

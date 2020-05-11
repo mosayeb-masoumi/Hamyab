@@ -21,6 +21,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.rahbarbazaar.hamyab.R;
@@ -47,6 +48,7 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     DrawerLayout drawer_layout_home;
     ImageView image_drawer;
     LinearLayout linear_drawer_about, linear_drawer_invite_friend;
+    TextView txt_exit;
     Button btn_start_service, btn_stop_service;
     RecyclerView recyclerView;
     ProjectListAdapter adapter;
@@ -117,11 +119,13 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
         btn_start_service = findViewById(R.id.btn_start_service);
         btn_stop_service = findViewById(R.id.btn_stop_service);
         recyclerView = findViewById(R.id.rv_projectList);
+        txt_exit = findViewById(R.id.txt_exit);
         image_drawer.setOnClickListener(this);
         linear_drawer_about.setOnClickListener(this);
         linear_drawer_invite_friend.setOnClickListener(this);
         btn_start_service.setOnClickListener(this);
         btn_stop_service.setOnClickListener(this);
+        txt_exit.setOnClickListener(this);
 
         check_service_state();
     }
@@ -151,6 +155,13 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
                 Cache.setString(MainActivity.this, "service_state", "disable");
                 btn_start_service.setVisibility(View.VISIBLE);
                 btn_stop_service.setVisibility(View.GONE);
+                break;
+
+
+            case R.id.txt_exit:
+                Cache.setString(MainActivity.this, "access_token", null);
+                startActivity(new Intent(MainActivity.this,LoginActivity.class));
+                finish();
                 break;
 
         }

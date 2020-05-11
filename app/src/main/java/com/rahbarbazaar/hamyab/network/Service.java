@@ -12,7 +12,7 @@ import retrofit2.http.Query;
 public interface Service {
 
     @POST("Auth/Login")
-    Single<LoginModel> login(@Query("name") String name,
+    Call<LoginModel> login(@Query("name") String name,
                              @Query("password") String password);
 
     @POST("GetData/GetGPS")
@@ -23,7 +23,7 @@ public interface Service {
 
 
     @POST("Dashboard")
-    Single<ProjectList> getProjectList(@Query("api_token") String api_token);
+    Call<ProjectList> getProjectList(@Query("api_token") String api_token);
 
 
 }

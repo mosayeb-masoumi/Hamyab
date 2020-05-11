@@ -172,7 +172,6 @@ public class GpsService extends Service {
 
 
     int a = 0;
-
     public void getLocation() {
             gpsTracker = new GpsTracker(this);
             if (gpsTracker.canGetLocation()) {
