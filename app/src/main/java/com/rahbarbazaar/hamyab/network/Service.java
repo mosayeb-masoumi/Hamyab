@@ -19,7 +19,8 @@ public interface Service {
     Call<Boolean> sendGPS(@Query("api_token") String api_token,
                           @Query("lat") String lat,
                           @Query("lng") String lng,
-                          @Query("project_id") String project_id);
+                          @Query("project_id") String project_id,
+                          @Query("description") String description);
 
     @POST("Dashboard")
     Call<ProjectList> getProjectList(@Query("api_token") String api_token);

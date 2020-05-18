@@ -1,5 +1,6 @@
 package com.rahbarbazaar.hamyab.ui;
 
+import android.annotation.SuppressLint;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -11,24 +12,28 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Process;
 import android.provider.Settings;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
-import android.support.v4.widget.DrawerLayout;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.rahbarbazaar.hamyab.R;
 import com.rahbarbazaar.hamyab.controllers.ProjectItemInteraction;
 import com.rahbarbazaar.hamyab.controllers.ProjectListAdapter;
 import com.rahbarbazaar.hamyab.models.dashboard.Project;
 import com.rahbarbazaar.hamyab.models.dashboard.ProjectList;
+import com.rahbarbazaar.hamyab.network.Service;
+import com.rahbarbazaar.hamyab.network.ServiceProvider;
 import com.rahbarbazaar.hamyab.service.GpsService;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity;
@@ -38,6 +43,10 @@ import com.rahbarbazaar.hamyab.utilities.GpsTracker;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 
 public class MainActivity extends CustomBaseActivity implements View.OnClickListener, ProjectItemInteraction {
@@ -52,10 +61,10 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     Button btn_start_service, btn_stop_service;
     RecyclerView recyclerView;
     ProjectListAdapter adapter;
-
-
     String strProject_id;
     String strRunning_project;
+    private GpsTracker gpsTracker;
+    String strLat = "", strLng = "";
 
 
     @Override
@@ -131,6 +140,7 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     }
 
 
+    @SuppressLint("WrongConstant")
     @Override
     public void onClick(View view) {
 
@@ -160,7 +170,8 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
 
             case R.id.txt_exit:
                 Cache.setString(MainActivity.this, "access_token", null);
-                startActivity(new Intent(MainActivity.this,LoginActivity.class));
+                startActivity(new Intent(MainActivity.this, LoginActivity.class));
+//                overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
                 finish();
                 break;
 
@@ -171,14 +182,12 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     private void turnOnGpsStartSrvice() {
 
         if (checkGpsON()) {
-//                startService(new Intent(MainActivity.this, GpsService.class));
             // ContextCompat choose the best method depend of different ApiAndroid
             ContextCompat.startForegroundService(MainActivity.this, new Intent(this, GpsService.class));
             Cache.setString(MainActivity.this, "service_state", "enable");
             btn_start_service.setVisibility(View.GONE);
             btn_stop_service.setVisibility(View.VISIBLE);
         } else {
-//                gpsDialog();
             gpsDialog2();
         }
     }
@@ -195,8 +204,8 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
 
             @Override
             public void onDeniedButtonClicked(boolean cancel_dialog) {
-               btn_start_main.setVisibility(View.VISIBLE);
-               btn_stop_main.setVisibility(View.GONE);
+                btn_start_main.setVisibility(View.VISIBLE);
+                btn_stop_main.setVisibility(View.GONE);
             }
         }, drawer_layout_home);
 
@@ -209,45 +218,7 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     }
 
 
-//    private void gpsDialog() {
-//        //     show waiting AVI
-//        Toast.makeText(this, "برای شروع لازم است GPS خود را روشن نمایید, صبور باشید ...", Toast.LENGTH_SHORT).show();
-//        LocationRequest mLocationRequest = LocationRequest.create()
-//                .setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY)
-//                .setInterval(1000)
-//                .setNumUpdates(2);
-//
-//        final LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder().addLocationRequest(mLocationRequest);
-//        builder.setAlwaysShow(true);
-//        builder.setNeedBle(true);
-//        SettingsClient client = LocationServices.getSettingsClient(this);
-//        Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());
-//        task.addOnSuccessListener(this, locationSettingsResponse -> {
-////            hasLocationPermission();
-//            turnOnGpsStartSrvice();
-//
-//        });
-//        task.addOnFailureListener(this, e -> {
-//            if (e instanceof ResolvableApiException) {
-//                // Location settings are not satisfied, but this can be fixed
-//                // by showing the user a dialog.
-//                try {
-//                    // Show the dialog by calling startResolutionForResult(),
-//                    // and check the result in onActivityResult().
-//                    ResolvableApiException resolvable = (ResolvableApiException) e;
-//                    resolvable.startResolutionForResult(this,
-//                            12);
-//                } catch (IntentSender.SendIntentException e1) {
-//
-//                    e.printStackTrace();
-//                }
-//            }
-//        });
-//    }
-
-
-
-
+    @SuppressLint("WrongConstant")
     @Override
     protected void onResume() {
         super.onResume();
@@ -263,6 +234,7 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
         unregisterReceiver(connectivityReceiver);
     }
 
+    @SuppressLint("WrongConstant")
     @Override
     public void onBackPressed() {
 
@@ -298,9 +270,12 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
     Button btn_start_main;
     Button btn_stop_main;
 
+
     @Override
     public void projectListItemOnClick(Project model, ProjectListAdapter adapter, String state,
-                                       String show_dialog, Button btn_start, Button btn_stop) {
+                                       String show_dialog, Button btn_start, Button btn_stop, Button btn_register,
+                                       RelativeLayout rl_av_register, RelativeLayout rl_register) {
+
 
         strProject_id = model.id;
         strRunning_project = model.title;
@@ -314,6 +289,9 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
                 Cache.setString(MainActivity.this, "running_project", strRunning_project);
                 btn_start.setVisibility(View.GONE);
                 btn_stop.setVisibility(View.VISIBLE);
+                rl_register.setVisibility(View.VISIBLE);
+                String running_project = Cache.getString(this, "running_project");
+                Toast.makeText(MainActivity.this, "پروژه "+running_project+" "+"در حال اجراست.", Toast.LENGTH_SHORT).show();
             } else {
                 btn_start_main = btn_start;
                 btn_stop_main = btn_stop;
@@ -323,11 +301,74 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
         } else if (state.equals("stop")) {
             btn_start.setVisibility(View.VISIBLE);
             btn_stop.setVisibility(View.GONE);
-            Cache.setString(MainActivity.this, "project_id", null);
-            Cache.setString(MainActivity.this, "running_project", null);
+            rl_register.setVisibility(View.GONE);
+
+            String running_project = Cache.getString(this, "running_project");
+            Toast.makeText(MainActivity.this, "پروژه "+running_project+" "+"متوقف گردید.", Toast.LENGTH_SHORT).show();
+
+//            Cache.setString(MainActivity.this, "project_id", null);
+//            Cache.setString(MainActivity.this, "running_project", null);
             stopService(new Intent(MainActivity.this, GpsService.class));
+        } else if (state.equals("register")) {
+
+            getLocation(btn_register, rl_av_register);
+        }
+
+    }
+
+
+    public void getLocation(Button btn_register, RelativeLayout rl_av_register) {
+        gpsTracker = new GpsTracker(this);
+        if (gpsTracker.canGetLocation()) {
+            double latitude = gpsTracker.getLatitude();
+            double longitude = gpsTracker.getLongitude();
+            strLat = (String.valueOf(latitude));
+            strLng = (String.valueOf(longitude));
+
+            sendLatng(btn_register, rl_av_register);
+
+        } else {
+            gpsTracker.showSettingsAlert();
         }
     }
+
+
+
+    private void sendLatng(Button btn_register, RelativeLayout rl_av_register) {
+
+        rl_av_register.setVisibility(View.VISIBLE);
+        btn_register.setVisibility(View.GONE);
+
+//        String running_project = Cache.getString(this, "running_project");
+        String api_token = Cache.getString(this, "access_token");
+        String project_id = Cache.getString(this, "project_id");
+
+        Service service = new ServiceProvider(this).getmService();
+        Call<Boolean> call = service.sendGPS(api_token, strLat, strLng, project_id, "register");
+        call.enqueue(new Callback<Boolean>() {
+            @Override
+            public void onResponse(Call<Boolean> call, Response<Boolean> response) {
+
+                rl_av_register.setVisibility(View.GONE);
+                btn_register.setVisibility(View.VISIBLE);
+                if (response.code() == 200) {
+
+                    Toast.makeText(MainActivity.this, "با موفقیت ثبت شد.", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    Toast.makeText(MainActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Boolean> call, Throwable t) {
+                rl_av_register.setVisibility(View.GONE);
+                btn_register.setVisibility(View.VISIBLE);
+                Toast.makeText(MainActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
@@ -336,19 +377,21 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
 
             turnOnGpsStartSrvice();
 
-            if(checkGpsON()){
+            if (checkGpsON()) {
                 Cache.setString(MainActivity.this, "project_id", strProject_id);
                 Cache.setString(MainActivity.this, "running_project", strRunning_project);
+
+//                turnOnGpsStartSrvice();
+
                 btn_start_main.setVisibility(View.GONE);
                 btn_stop_main.setVisibility(View.VISIBLE);
-            }else{
+            } else {
                 btn_start_main.setVisibility(View.VISIBLE);
                 btn_stop_main.setVisibility(View.GONE);
             }
 
         }
     }
-
 
 
     private void showNotallowDialog() {
@@ -366,4 +409,6 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
             }
         }, drawer_layout_home, running_project);
     }
+
+
 }

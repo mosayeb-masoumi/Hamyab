@@ -1,33 +1,24 @@
 package com.rahbarbazaar.hamyab.service;
 
-import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.location.Location;
 import android.location.LocationManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
-
-import com.google.android.gms.location.LocationListener;
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 import com.rahbarbazaar.hamyab.R;
 import com.rahbarbazaar.hamyab.network.ServiceProvider;
-import com.rahbarbazaar.hamyab.ui.MainActivity;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.GpsTracker;
-
 import java.util.Timer;
 import java.util.TimerTask;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -40,10 +31,11 @@ public class GpsService extends Service {
     private Handler mHandler = new Handler();
     private Timer mTimer = null;
     private GpsTracker gpsTracker;
-    String strLat = "", strLng = "";
+    String strLat = "", strLng = "" , descriptionStartstop = "",description="";
 
     private String CHANNEL_ID = "channelId";
     private NotificationManager notifManager;
+
 
 
 
@@ -56,8 +48,9 @@ public class GpsService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-
-//        Toast.makeText(this, "service is created", Toast.LENGTH_SHORT).show();
+//        String running_project = Cache.getString(this, "running_project");
+//        Toast.makeText(GpsService.this, "پروژه "+running_project+" "+"در حال اجراست.", Toast.LENGTH_SHORT).show();
+        descriptionStartstop = "start";
     }
 
     @Override
@@ -110,7 +103,15 @@ public class GpsService extends Service {
     public void onDestroy() {
         super.onDestroy();
         mTimer.cancel();
-        Toast.makeText(this, "service stop", Toast.LENGTH_SHORT).show();
+        descriptionStartstop ="stop";
+        getLocation();
+
+//        String running_project = Cache.getString(this, "running_project");
+//        Toast.makeText(GpsService.this, "پروژه "+running_project+" "+"متوقف گردید.", Toast.LENGTH_SHORT).show();
+
+        Cache.setString(GpsService.this, "project_id", null);
+        Cache.setString(GpsService.this, "running_project", null);
+
     }
 
     class TimeDisplayTimerTask extends TimerTask {
@@ -118,13 +119,8 @@ public class GpsService extends Service {
         public void run() {
             // run on another thread
             mHandler.post(() -> {
-                // display toast
-//                Toast.makeText(getApplicationContext(), "service start", Toast.LENGTH_SHORT).show();
-
-//
 
                 if (checkGpsON()) {
-//                    sendLatng();
                     getLocation();
                 } else {
                     Toast.makeText(getApplicationContext(), "لطفا GPS دستگاه خود را روشن نمایید", Toast.LENGTH_SHORT).show();
@@ -137,21 +133,22 @@ public class GpsService extends Service {
 
     private void sendLatng() {
 
-//        getLocation();
-
+        description = descriptionStartstop;
 
         String running_project = Cache.getString(this, "running_project");
+
         String api_token = Cache.getString(GpsService.this, "access_token");
         String project_id = Cache.getString(GpsService.this, "project_id");
 
         com.rahbarbazaar.hamyab.network.Service service = new ServiceProvider(GpsService.this).getmService();
-        Call<Boolean> call = service.sendGPS(api_token, strLat, strLng, project_id);
+        Call<Boolean> call = service.sendGPS(api_token, strLat, strLng, project_id,description);
         call.enqueue(new Callback<Boolean>() {
             @Override
             public void onResponse(Call<Boolean> call, Response<Boolean> response) {
                 if (response.code() == 200) {
-                    Toast.makeText(GpsService.this, "پروژه " + running_project +"  "+"ID=" +project_id+ " " +
-                            strLat + "  " + strLng, Toast.LENGTH_SHORT).show();
+//                    Toast.makeText(GpsService.this, "پروژه " + running_project +"  "+"ID=" +project_id+ " " +
+//                            strLat + "  " + strLng +" "+description, Toast.LENGTH_SHORT).show();
+                    descriptionStartstop = "";
 
                 } else {
                     Toast.makeText(GpsService.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
@@ -171,7 +168,6 @@ public class GpsService extends Service {
     }
 
 
-    int a = 0;
     public void getLocation() {
             gpsTracker = new GpsTracker(this);
             if (gpsTracker.canGetLocation()) {
@@ -179,11 +175,6 @@ public class GpsService extends Service {
                 double longitude = gpsTracker.getLongitude();
                 strLat = (String.valueOf(latitude));
                 strLng = (String.valueOf(longitude));
-                // to handle getting gps in first calculate after turning on gps
-                if(a <2 ){
-                    a ++;
-                    getLocation();
-                }
 
                 sendLatng();
 

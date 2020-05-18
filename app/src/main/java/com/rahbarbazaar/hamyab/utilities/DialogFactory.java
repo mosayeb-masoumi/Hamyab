@@ -3,13 +3,15 @@ package com.rahbarbazaar.hamyab.utilities;
 import android.content.Context;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
-import android.support.v7.app.AlertDialog;
+//import android.support.v7.app.AlertDialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AlertDialog;
 
 import com.rahbarbazaar.hamyab.R;
 
@@ -112,17 +114,19 @@ public class DialogFactory {
 
 
     public void createGpsDialog(DialogFactoryInteraction listener, View root ) {
-        View customLayout = LayoutInflater.from(context).inflate(R.layout.sample_dialog2, (ViewGroup) root, false);
+        View customLayout = LayoutInflater.from(context).inflate(R.layout.sample_dialog, (ViewGroup) root, false);
 
-        Button btn_close = customLayout.findViewById(R.id.btn1);
-        Button btn_setting = customLayout.findViewById(R.id.btn2);
+        Button btn_setting = customLayout.findViewById(R.id.btn);
         TextView txt_description = customLayout.findViewById(R.id.txt_description);
         TextView txt_header = customLayout.findViewById(R.id.txt_header);
         ImageView img_close = customLayout.findViewById(R.id.img_close);
 
 
-        btn_close.setText("بستن");
-        btn_setting.setText("تنظیمات");
+//        btn_close.setVisibility(View.GONE);
+        img_close.setVisibility(View.GONE);
+
+        btn_setting.setText("تنظیمات GPS");
+
         txt_header.setText(context.getResources().getString(R.string.warning));
 
         String description = "لطفا GPS دستگاه خود را روشن نمایید.";
@@ -147,16 +151,14 @@ public class DialogFactory {
             listener.onDeniedButtonClicked(false);
         });
 
-        btn_close.setOnClickListener(view -> {
-            dialog.dismiss();
-            listener.onDeniedButtonClicked(false);
-        });
+
 
         btn_setting.setOnClickListener(view -> {
             listener.onAcceptButtonClicked();
             dialog.dismiss();
         });
 
+        dialog.setCanceledOnTouchOutside(false);
 
 //        //if dialog dismissed, this action will be called
 //        dialog.setOnDismissListener(dialogInterface -> listener.onDeniedButtonClicked(true));

@@ -11,12 +11,6 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
-import android.text.Editable;
-import android.text.Selection;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
@@ -27,7 +21,11 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.jakewharton.retrofit2.adapter.rxjava2.HttpException;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+
 import com.rahbarbazaar.hamyab.R;
 import com.rahbarbazaar.hamyab.api_error.ErrorUtils;
 import com.rahbarbazaar.hamyab.api_error.ErrorsMessage422;
@@ -35,25 +33,14 @@ import com.rahbarbazaar.hamyab.models.LoginModel;
 import com.rahbarbazaar.hamyab.models.dashboard.ProjectList;
 import com.rahbarbazaar.hamyab.network.Service;
 import com.rahbarbazaar.hamyab.network.ServiceProvider;
-import com.rahbarbazaar.hamyab.service.GpsService;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity;
 import com.rahbarbazaar.hamyab.utilities.DialogFactory;
 import com.rahbarbazaar.hamyab.utilities.GeneralTools;
+import com.rahbarbazaar.hamyab.utilities.GenerateHashCode;
 import com.rahbarbazaar.hamyab.utilities.GpsTracker;
 import com.wang.avi.AVLoadingIndicatorView;
-
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Objects;
-
-import io.reactivex.Scheduler;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.observers.DisposableSingleObserver;
-import io.reactivex.schedulers.Schedulers;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -67,10 +54,8 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
     AVLoadingIndicatorView avi;
     RelativeLayout rl_root_login;
 
-
     // for handling422
     private StringBuilder builderName, builderPassword;
-
 
     CompositeDisposable disposable;
 
@@ -82,7 +67,6 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
-
 
         //check network broadcast reciever
         tools = GeneralTools.getInstance();
@@ -97,18 +81,12 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
         initView();
 
 
-
-        edt_name.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView textView, int actionId, KeyEvent keyEvent) {
-
-                if(actionId == EditorInfo.IME_ACTION_NEXT){
-                    edt_password.requestFocus();
-                    return true;
-                }
-
-                return false;
+        edt_name.setOnEditorActionListener((textView, actionId, keyEvent) -> {
+            if(actionId == EditorInfo.IME_ACTION_NEXT){
+                edt_password.requestFocus();
+                return true;
             }
+            return false;
         });
 
 
@@ -127,14 +105,12 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
     private void submitLoginRequest() {
 
 //        getLocation();
-
-
         avi.setVisibility(View.VISIBLE);
         btn_login.setVisibility(View.GONE);
 
         String name = edt_name.getText().toString();
         String password = edt_password.getText().toString();
-        String hashed_password = sha1Hash(password);
+        String hashed_password = GenerateHashCode.setToHash(password);
 
         Service service = new ServiceProvider(this).getmService();
         Call<LoginModel> call = service.login(name, hashed_password);
@@ -430,36 +406,36 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
     }
 
 
-    String sha1Hash(String toHash) {
-        String hash = null;
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
-            byte[] bytes = toHash.getBytes("UTF-8");
-            digest.update(bytes, 0, bytes.length);
-            bytes = digest.digest();
-
-            // This is ~55x faster than looping and String.formating()
-            hash = bytesToHex(bytes);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
-        return Objects.requireNonNull(hash).toLowerCase();
-    }
-
-    // http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
-    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-
-    public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = hexArray[v >>> 4];
-            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-        }
-        return new String(hexChars);
-    }
+//    String sha1Hash(String toHash) {
+//        String hash = null;
+//        try {
+//            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+//            byte[] bytes = toHash.getBytes("UTF-8");
+//            digest.update(bytes, 0, bytes.length);
+//            bytes = digest.digest();
+//
+//            // This is ~55x faster than looping and String.formating()
+//            hash = bytesToHex(bytes);
+//        } catch (NoSuchAlgorithmException e) {
+//            e.printStackTrace();
+//        } catch (UnsupportedEncodingException e) {
+//            e.printStackTrace();
+//        }
+//        return Objects.requireNonNull(hash).toLowerCase();
+//    }
+//
+//    // http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
+//    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+//
+//    public static String bytesToHex(byte[] bytes) {
+//        char[] hexChars = new char[bytes.length * 2];
+//        for (int j = 0; j < bytes.length; j++) {
+//            int v = bytes[j] & 0xFF;
+//            hexChars[j * 2] = hexArray[v >>> 4];
+//            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+//        }
+//        return new String(hexChars);
+//    }
 
 
     @Override
