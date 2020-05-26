@@ -156,10 +156,12 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
                 Toast.makeText(this, "invite", Toast.LENGTH_SHORT).show();
                 break;
 
+                //related to hidden button which is not available yet
             case R.id.btn_start_service:
                 turnOnGpsStartSrvice();
                 break;
 
+            //related to hidden button which is not available yet
             case R.id.btn_stop_service:
                 stopService(new Intent(MainActivity.this, GpsService.class));
                 Cache.setString(MainActivity.this, "service_state", "disable");
@@ -169,9 +171,12 @@ public class MainActivity extends CustomBaseActivity implements View.OnClickList
 
 
             case R.id.txt_exit:
-                Cache.setString(MainActivity.this, "access_token", null);
+
+                stopService(new Intent(MainActivity.this, GpsService.class));
+                Cache.setString(MainActivity.this, "service_state", "disable");
                 startActivity(new Intent(MainActivity.this, LoginActivity.class));
-//                overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
+//                Cache.setString(MainActivity.this, "access_token", null); // sent this line to login
+
                 finish();
                 break;
 

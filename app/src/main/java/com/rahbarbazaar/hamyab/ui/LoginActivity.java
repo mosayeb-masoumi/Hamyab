@@ -11,21 +11,17 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.RelativeLayout;
-import android.widget.TextView;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
-
 import com.rahbarbazaar.hamyab.R;
 import com.rahbarbazaar.hamyab.api_error.ErrorUtils;
 import com.rahbarbazaar.hamyab.api_error.ErrorsMessage422;
@@ -33,6 +29,7 @@ import com.rahbarbazaar.hamyab.models.LoginModel;
 import com.rahbarbazaar.hamyab.models.dashboard.ProjectList;
 import com.rahbarbazaar.hamyab.network.Service;
 import com.rahbarbazaar.hamyab.network.ServiceProvider;
+import com.rahbarbazaar.hamyab.service.GpsService;
 import com.rahbarbazaar.hamyab.utilities.Cache;
 import com.rahbarbazaar.hamyab.utilities.CustomBaseActivity;
 import com.rahbarbazaar.hamyab.utilities.DialogFactory;
@@ -99,6 +96,13 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
             }
             return false;
         });
+
+
+        Cache.setString(LoginActivity.this, "access_token", null);
+
+        Cache.setString(LoginActivity.this, "project_id", null);
+        Cache.setString(LoginActivity.this, "running_project", null);
+
     }
 
 
@@ -170,70 +174,6 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
             }
         });
 
-
-//        disposable.add(service.login(name, hashed_password)
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .subscribeWith(new DisposableSingleObserver<LoginModel>() {
-//
-//                    @Override
-//                    public void onSuccess(LoginModel result) {
-//
-//
-//                        LoginModel loginModel = new LoginModel();
-//                        loginModel = result;
-//                        Cache.setString(LoginActivity.this, "access_token", String.valueOf(loginModel.apiToken));
-//                        getProjectList();
-//                    }
-//
-//                    @Override
-//                    public void onError(Throwable e) {
-//
-//                        avi.setVisibility(View.GONE);
-//                        btn_login.setVisibility(View.VISIBLE);
-//
-//
-//                        if (e instanceof HttpException) {
-//                            int error = ((HttpException) e).code();
-//                            if (error == 422) {
-//                                builderName = null;
-//                                builderPassword = null;
-//                                ErrorsMessage422 apiError = ErrorUtils.parseError422(((HttpException) e).response());
-//
-//                                if (apiError.name != null) {
-//                                    builderName = new StringBuilder();
-//                                    for (String a : apiError.name) {
-//                                        builderName.append("").append(a).append(" ");
-//                                    }
-//                                }
-//
-//                                if (apiError.password != null) {
-//                                    builderPassword = new StringBuilder();
-//                                    for (String b : apiError.password) {
-//                                        builderPassword.append("").append(b).append(" ");
-//                                    }
-//                                }
-//
-//                                if (builderName != null) {
-//                                    Toast.makeText(LoginActivity.this, "" + builderName, Toast.LENGTH_SHORT).show();
-//                                }
-//                                if (builderPassword != null) {
-//                                    Toast.makeText(LoginActivity.this, "" + builderPassword, Toast.LENGTH_SHORT).show();
-//                                }
-//                            } else {
-//                                Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
-//                            }
-//
-//
-////                        } else if(e instanceof IOException) {
-//                        } else {
-//                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
-//                        }
-//
-//
-//                    }
-//                }));
-
     }
 
     private void getProjectList() {
@@ -274,40 +214,6 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
             }
         });
 
-//        disposable.add(service.getProjectList(api_token)
-//                .subscribeOn(Schedulers.io())
-//                .observeOn(AndroidSchedulers.mainThread())
-//                .subscribeWith(new DisposableSingleObserver<ProjectList>() {
-//                    @Override
-//                    public void onSuccess(ProjectList result) {
-//
-//                        avi.setVisibility(View.GONE);
-//                        btn_login.setVisibility(View.VISIBLE);
-//
-//                        ProjectList projectList = new ProjectList();
-//                        projectList = result;
-//                        Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-//                        intent.putExtra("projectList", projectList);
-//                        startActivity(intent);
-//                        getLocation();   // to be sure
-//                        finish();
-//                        overridePendingTransition(R.anim.slide_in, R.anim.slide_out);
-//
-//                    }
-//
-//                    @Override
-//                    public void onError(Throwable e) {
-//                        avi.setVisibility(View.GONE);
-//                        btn_login.setVisibility(View.VISIBLE);
-//                        if (e instanceof HttpException) {
-//                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.serverFaield), Toast.LENGTH_SHORT).show();
-//
-//                        } else {
-//                            Toast.makeText(LoginActivity.this, "" + getResources().getString(R.string.connectionFaield), Toast.LENGTH_SHORT).show();
-//                        }
-//
-//                    }
-//                }));
     }
 
 
@@ -406,36 +312,6 @@ public class LoginActivity extends CustomBaseActivity implements View.OnClickLis
     }
 
 
-//    String sha1Hash(String toHash) {
-//        String hash = null;
-//        try {
-//            MessageDigest digest = MessageDigest.getInstance("SHA-1");
-//            byte[] bytes = toHash.getBytes("UTF-8");
-//            digest.update(bytes, 0, bytes.length);
-//            bytes = digest.digest();
-//
-//            // This is ~55x faster than looping and String.formating()
-//            hash = bytesToHex(bytes);
-//        } catch (NoSuchAlgorithmException e) {
-//            e.printStackTrace();
-//        } catch (UnsupportedEncodingException e) {
-//            e.printStackTrace();
-//        }
-//        return Objects.requireNonNull(hash).toLowerCase();
-//    }
-//
-//    // http://stackoverflow.com/questions/9655181/convert-from-byte-array-to-hex-string-in-java
-//    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
-//
-//    public static String bytesToHex(byte[] bytes) {
-//        char[] hexChars = new char[bytes.length * 2];
-//        for (int j = 0; j < bytes.length; j++) {
-//            int v = bytes[j] & 0xFF;
-//            hexChars[j * 2] = hexArray[v >>> 4];
-//            hexChars[j * 2 + 1] = hexArray[v & 0x0F];
-//        }
-//        return new String(hexChars);
-//    }
 
 
     @Override
